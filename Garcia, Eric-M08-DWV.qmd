@@ -1,5 +1,5 @@
 ---
-title: "M08: Data Wrangling and Visualization for MSDM Culminating Experience Project"
+title: "M08: Data Wrangling and Visualization for MSDM Culminating Experience Project, Analytics Objective #3"
 author: "Eric Garcia"
 date: '`r format(Sys.time())`'
 format: 
@@ -54,7 +54,8 @@ ggplot(purchase_rate, aes(x = condition_ID, y = PurchaseRate)) +
        y = "Purchase Rate") +
   theme_minimal()
 ```
-
+Description:
+This bar chart displays the average purchase rate for each experimental condition. It provides an overall comparison between conditions, helping to identify which combinations of delay and value confirmation are most effective. Each condition_ID represents a unique combination of variables, offering a quick way to spot standout performers or poor performers in terms of purchase behavior.
 ```{r}
 # Group and summarize
 interaction_data <- df %>%
@@ -71,7 +72,8 @@ ggplot(interaction_data, aes(x = Delay, y = PurchaseRate, group = value_confirma
        color = "Value Confirmation") +
   theme_minimal()
 ```
-
+Description:
+This interaction plot illustrates how purchase rate changes across levels of delay, separated by whether value confirmation was used. The lines represent how effective value confirmation is across different delays. If the lines are not parallel or cross, it suggests an interaction effect, meaning the impact of one variable depends on the level of the other.
 ```{r}
 # Run logistic regression
 model <- glm(Purchased ~ Delay * value_confirmation + Negotiation_Aspiration + Price_Sensitivity,
@@ -81,4 +83,52 @@ model <- glm(Purchased ~ Delay * value_confirmation + Negotiation_Aspiration + P
 # Output summary
 summary(model)
 ```
+Description:
+This statistical model estimates how response delay, value confirmation, and their interaction influence the likelihood of purchase, controlling for negotiation aspiration and price sensitivity. If the interaction term (Delay:value_confirmation) is statistically significant, it provides evidence that the effect of one variable depends on the presence of the other.
+```{r}
+# Grouped Bar Chart: Purchase Rate by Delay and VC
+interaction_data <- df |>
+  group_by(Delay, value_confirmation) |>
+  summarise(PurchaseRate = mean(Purchased))
+
+ggplot(interaction_data, aes(x = Delay, y = PurchaseRate, fill = value_confirmation)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Purchase Rate by Delay and Value Confirmation",
+       x = "Delay", y = "Purchase Rate", fill = "Value Confirmation") +
+  theme_minimal()
+```
+Description:
+This grouped bar chart compares purchase rates across delay levels, broken out by value confirmation. It’s useful for directly comparing the effectiveness of VC strategies at each delay level. You can easily see whether value confirmation increases the purchase rate for quick vs. delayed responses.
+```{r}
+# Heatmap: Delay × VC with Purchase Rate
+ggplot(interaction_data, aes(x = Delay, y = value_confirmation, fill = PurchaseRate)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  labs(title = "Heatmap: Purchase Rate by Delay and Value Confirmation",
+       x = "Delay", y = "Value Confirmation", fill = "Purchase Rate") +
+  theme_minimal()
+```
+Description:
+This heatmap provides a compact visual summary of purchase rates across all combinations of delay and value confirmation. Darker cells indicate higher purchase rates. This format is particularly helpful for spotting the most and least effective combinations at a glance.
+```{r}
+# Predicted Purchase Probability Plot
+library(ggeffects)
+pred <- ggpredict(model, terms = c("Delay", "value_confirmation"))
+
+plot(pred) +
+  labs(title = "Predicted Purchase Probability",
+       x = "Delay", y = "Probability",
+       color = "Value Confirmation")
+```
+Description:
+This plot visualizes model-based predictions of purchase probability for each Delay × Value Confirmation combination. It transforms the logistic regression results into a user-friendly plot, showing the estimated effect sizes and confidence intervals. It's a key visualization for interpreting how different strategies statistically influence customer behavior.
+```{r}
+# Mosaic Plot: Delay, Value Confirmation, and Purchase
+library(vcd)
+mosaic(~ Delay + value_confirmation + Purchased, data = df,
+       shade = TRUE, legend = TRUE)
+```
+Description:
+This mosaic plot shows the joint distribution of delay, value confirmation, and purchase decisions. Each tile's area reflects the number of observations, and shading indicates the strength of association. It’s a categorical visualization that reveals how common or rare certain combinations are and whether there's statistical dependence between the variables.
+
 
