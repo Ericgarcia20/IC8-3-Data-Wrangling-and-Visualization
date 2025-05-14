@@ -1,0 +1,84 @@
+---
+title: "M08: Data Wrangling and Visualization for MSDM Culminating Experience Project"
+author: "Eric Garcia"
+date: '`r format(Sys.time())`'
+format: 
+  html: 
+    toc: true
+    toc-depth: 4
+    number-sections: true
+    code-line-numbers: true
+    code-fold: false
+    code-link: true
+    embed-resources: true
+editor: visual
+execute: 
+  freeze: auto
+  warning: false
+  error: true
+---
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(stats)
+library(stats4)
+```
+
+```{r}
+# Read the data
+df <- read.csv("PA14 V5.csv")
+
+# Clean and rename columns
+colnames(df)[colnames(df) == "value confirmation"] <- "value_confirmation"
+
+# Convert variables to appropriate types
+df$condition_ID <- as.factor(df$condition_ID)
+df$Delay <- as.factor(df$Delay)
+df$value_confirmation <- as.factor(df$value.confirmation)
+df$Purchased <- as.integer(df$Purchased)
+```
+
+```{r}
+# Calculate purchase rate by condition
+purchase_rate <- df %>%
+  group_by(condition_ID) %>%
+  summarise(PurchaseRate = mean(Purchased))
+
+# Plot
+ggplot(purchase_rate, aes(x = condition_ID, y = PurchaseRate)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Purchase Rate by Condition",
+       x = "Condition ID",
+       y = "Purchase Rate") +
+  theme_minimal()
+```
+
+```{r}
+# Group and summarize
+interaction_data <- df %>%
+  group_by(Delay, value_confirmation) %>%
+  summarise(PurchaseRate = mean(Purchased))
+
+# Plot
+ggplot(interaction_data, aes(x = Delay, y = PurchaseRate, group = value_confirmation, color = value_confirmation)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Interaction: Delay and Value Confirmation",
+       x = "Delay",
+       y = "Purchase Rate",
+       color = "Value Confirmation") +
+  theme_minimal()
+```
+
+```{r}
+# Run logistic regression
+model <- glm(Purchased ~ Delay * value_confirmation + Negotiation_Aspiration + Price_Sensitivity,
+             data = df,
+             family = binomial())
+
+# Output summary
+summary(model)
+```
+
